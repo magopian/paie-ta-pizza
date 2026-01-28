@@ -458,7 +458,7 @@ viewPizzaList pizzas ({ newPizza } as model) =
                                                 [ Html.text pizza.date
                                                 ]
                                             , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text <| String.fromFloat pizza.price ++ "€" ]
-                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text "-" ] -- <| Debug.toString pizza.participants ]
+                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ viewParticipants pizza.participants ]
                                             , Html.td []
                                                 [ loadingActionButton "Remove this pizza" pizza model.deletePizzaList DeletePizza
                                                 ]
@@ -571,6 +571,32 @@ viewErrorList errorList =
                             ]
                             [ Html.text "x" ]
                         , Html.text error
+                        ]
+                )
+        )
+
+
+viewParticipants : List Participant -> Html.Html Msg
+viewParticipants participants =
+    Html.ul
+        []
+        (participants
+            |> List.map
+                (\{ name, half, paid } ->
+                    Html.li []
+                        [ Html.text name
+                        , Html.text <|
+                            if half then
+                                "demi portion"
+
+                            else
+                                ""
+                        , Html.text <|
+                            if paid then
+                                "payé"
+
+                            else
+                                ""
                         ]
                 )
         )
