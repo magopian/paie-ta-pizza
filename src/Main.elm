@@ -80,10 +80,29 @@ type alias Flags =
 
 
 init : Flags -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init flags _ key =
+init flags url key =
     let
+        serverURLFromQuery =
+            url
+                |> .query
+                |> Maybe.withDefault ""
+                |> (\u ->
+                        if String.contains "serverURL=" u then
+                            String.replace "serverURL=" "" u
+
+                        else
+                            ""
+                   )
+
         emptyLoginFormWithServerURL =
-            { emptyLoginForm | serverURL = flags.serverURL }
+            { emptyLoginForm
+                | serverURL =
+                    if not (String.isEmpty serverURLFromQuery) then
+                        serverURLFromQuery
+
+                    else
+                        flags.serverURL
+            }
 
         loginForm =
             -- Decode a string from the value (the stringified session data)
