@@ -407,7 +407,7 @@ viewPizzaList pizzas ({ newPizza } as model) =
                         [ Html.text "Prix de la commande"
                         ]
                     , Html.th []
-                        [ Html.text "Participant.e.s"
+                        [ Html.text "Participant.e.s (ajouter `/2` pour les étudiants)"
                         ]
                     , Html.th [] [ Html.text "Actions" ]
                     ]
@@ -697,7 +697,7 @@ stringToParticipants participants =
         |> String.split "\n"
         |> List.map
             (\name ->
-                { name = name, half = False, paid = False }
+                { name = name, half = String.endsWith "/2" name, paid = False }
             )
 
 
