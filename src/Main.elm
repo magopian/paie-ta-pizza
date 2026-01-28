@@ -434,9 +434,8 @@ viewPizzaList pizzas ({ newPizza } as model) =
                         , Html.td []
                             [ Html.textarea
                                 [ Html.Attributes.name "participants"
-
-                                -- , Html.Events.onInput <| \participant -> UpdatePizza { newPizza | participants = newPizza.participants ++ [ { name = participant, half = False, paid = False } ] }
-                                -- , Html.Attributes.value <| Debug.toString newPizza.participants
+                                , Html.Events.onInput <| \participants -> UpdatePizza { newPizza | participants = stringToParticipants participants }
+                                , Html.Attributes.value <| participantsToString newPizza.participants
                                 , Html.Attributes.style "white-space" "pre-wrap"
                                 ]
                                 []
@@ -459,7 +458,7 @@ viewPizzaList pizzas ({ newPizza } as model) =
                                                 [ Html.text pizza.date
                                                 ]
                                             , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text <| String.fromFloat pizza.price ++ "€" ]
-                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text "Liste des participants à venir" ] -- <| Debug.toString pizza.participants ]
+                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text "-" ] -- <| Debug.toString pizza.participants ]
                                             , Html.td []
                                                 [ loadingActionButton "Remove this pizza" pizza model.deletePizzaList DeletePizza
                                                 ]
@@ -625,6 +624,23 @@ loadingActionButton label entry updatingPizzaList onClickMessage =
     Html.button
         (Html.Attributes.type_ "button" :: loadingAttrs)
         [ Html.text label ]
+
+
+stringToParticipants : String -> List Participant
+stringToParticipants participants =
+    participants
+        |> String.split "\n"
+        |> List.map
+            (\name ->
+                { name = name, half = False, paid = False }
+            )
+
+
+participantsToString : List Participant -> String
+participantsToString participants =
+    participants
+        |> List.map .name
+        |> String.join "\n"
 
 
 
