@@ -689,8 +689,8 @@ computePriceForParticipant participants participant price =
     price
         / toFloat parts
         |> (*) 100
-        -- Prepare for rounding to the nearest cent
-        |> round
+        -- Prepare for rounding (up) to the nearest cent
+        |> ceiling
         |> toFloat
         |> (\pricePerPartInCents -> pricePerPartInCents / 100)
         |> (\pricePerPart ->
