@@ -458,7 +458,7 @@ viewPizzaList pizzas ({ newPizza } as model) =
                                                 [ Html.text pizza.date
                                                 ]
                                             , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text <| String.fromFloat pizza.price ++ "€" ]
-                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ viewParticipants pizza.participants ]
+                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ viewParticipants pizza.participants pizza.price ]
                                             , Html.td []
                                                 [ loadingActionButton "Remove this pizza" pizza model.deletePizzaList DeletePizza
                                                 ]
@@ -576,30 +576,69 @@ viewErrorList errorList =
         )
 
 
-viewParticipants : List Participant -> Html.Html Msg
-viewParticipants participants =
+viewParticipants : List Participant -> Float -> Html.Html Msg
+viewParticipants participants price =
     Html.ul
         []
         (participants
             |> List.map
-                (\{ name, half, paid } ->
+                (\({ name, half, paid } as participant) ->
                     Html.li []
                         [ Html.text name
+                        , Html.text " doit : "
+                        , price
+                            |> computePriceForParticipant participants participant
+                            |> String.fromFloat
+                            |> Html.text
                         , Html.text <|
                             if half then
-                                "demi portion"
+                                " (demi portion)"
 
                             else
                                 ""
-                        , Html.text <|
-                            if paid then
-                                "payé"
-
-                            else
-                                ""
+                        , Html.label []
+                            [ Html.text "Payé : "
+                            , Html.input
+                                [ Html.Attributes.type_ "checkbox"
+                                , Html.Attributes.checked paid
+                                ]
+                                []
+                            ]
                         ]
                 )
         )
+
+
+computePriceForParticipant : List Participant -> Participant -> Float -> Float
+computePriceForParticipant participants participant price =
+    let
+        parts : Int
+        parts =
+            participants
+                |> List.map
+                    (\{ half } ->
+                        if half then
+                            1
+
+                        else
+                            2
+                    )
+                |> List.sum
+    in
+    price
+        / toFloat parts
+        |> (*) 100
+        -- Prepare for rounding to the nearest cent
+        |> round
+        |> toFloat
+        |> (\pricePerPartInCents -> pricePerPartInCents / 100)
+        |> (\pricePerPart ->
+                if participant.half then
+                    pricePerPart
+
+                else
+                    pricePerPart * 2
+           )
 
 
 type ButtonState
