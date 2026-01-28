@@ -37,7 +37,7 @@ type alias Pizza =
 
 type alias NewPizza =
     { date : String
-    , price : Float
+    , price : String
     , participants : List Participant
     }
 
@@ -45,7 +45,7 @@ type alias NewPizza =
 emptyNewPizza : NewPizza
 emptyNewPizza =
     { date = ""
-    , price = 0
+    , price = ""
     , participants = []
     }
 
@@ -200,7 +200,7 @@ update msg model =
             let
                 data =
                     encodeData
-                        model.newPizza.price
+                        (String.toFloat model.newPizza.price |> Maybe.withDefault 0)
                         model.newPizza.participants
                         model.newPizza.date
 
@@ -466,8 +466,8 @@ viewPizzaList pizzas ({ newPizza } as model) =
                             [ Html.input
                                 [ Html.Attributes.type_ "text"
                                 , Html.Attributes.name "price"
-                                , Html.Events.onInput <| \price -> UpdatePizza { newPizza | price = String.toFloat price |> Maybe.withDefault 0 }
-                                , Html.Attributes.value <| String.fromFloat newPizza.price
+                                , Html.Events.onInput <| \price -> UpdatePizza { newPizza | price = price }
+                                , Html.Attributes.value newPizza.price
                                 ]
                                 []
                             ]
@@ -629,6 +629,7 @@ viewParticipants participants pizza =
                         , pizza.price
                             |> computePriceForParticipant participants participant
                             |> String.fromFloat
+                            |> (\price -> price ++ "€")
                             |> Html.text
                         , Html.text <|
                             if half then
@@ -904,7 +905,7 @@ encodePizzaData : NewPizza -> Encode.Value
 encodePizzaData newPizza =
     Encode.object
         [ ( "date", Encode.string newPizza.date )
-        , ( "price", Encode.float newPizza.price )
+        , ( "price", Encode.float (String.toFloat newPizza.price |> Maybe.withDefault 0) )
         , ( "participants", Encode.list encodeParticipant newPizza.participants )
         ]
 
@@ -914,7 +915,7 @@ decodePizzaData =
     Decode.map3
         NewPizza
         (Decode.field "date" Decode.string)
-        (Decode.field "price" Decode.float)
+        (Decode.field "price" Decode.float |> Decode.map String.fromFloat)
         (Decode.field "participants" (Decode.list decodeParticipant))
 
 
