@@ -125,6 +125,8 @@ type Msg
     | DeletePizza Pizza
     | PizzaDeleted Pizza (Result Kinto.Error DeletedPizza)
     | PizzasFetched (Result Kinto.Error (Kinto.Pager Pizza))
+    | PayPizza Pizza Participant Bool
+    | PizzaPaid (Result Kinto.Error Pizza)
     | UpdateLoginForm LoginForm
     | UseLogin
     | Logout
@@ -287,6 +289,44 @@ update msg model =
             ( { model
                 | deletePizzaList = deletePizzaList
                 , errorList = Kinto.errorToString err :: model.errorList
+              }
+            , Cmd.none
+            )
+
+        PayPizza pizza participant isPaid ->
+            let
+                client =
+                    Kinto.client model.loginForm.serverURL (Kinto.Basic model.loginForm.username model.loginForm.password)
+            in
+            ( model
+            , payPizza client pizza participant isPaid
+            )
+
+        PizzaPaid (Ok updatedPizza) ->
+            ( { model
+                | pizzas =
+                    case model.pizzas of
+                        Received pizzaList ->
+                            pizzaList
+                                |> List.map
+                                    (\pizza ->
+                                        if pizza.id == updatedPizza.id then
+                                            updatedPizza
+
+                                        else
+                                            pizza
+                                    )
+                                |> Received
+
+                        _ ->
+                            model.pizzas
+              }
+            , Cmd.none
+            )
+
+        PizzaPaid (Err err) ->
+            ( { model
+                | errorList = Kinto.errorToString err :: model.errorList
               }
             , Cmd.none
             )
@@ -458,7 +498,7 @@ viewPizzaList pizzas ({ newPizza } as model) =
                                                 [ Html.text pizza.date
                                                 ]
                                             , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ Html.text <| String.fromFloat pizza.price ++ "€" ]
-                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ viewParticipants pizza.participants pizza.price ]
+                                            , Html.td [ Html.Attributes.style "white-space" "pre-wrap" ] [ viewParticipants pizza.participants pizza ]
                                             , Html.td []
                                                 [ loadingActionButton "Remove this pizza" pizza model.deletePizzaList DeletePizza
                                                 ]
@@ -576,8 +616,8 @@ viewErrorList errorList =
         )
 
 
-viewParticipants : List Participant -> Float -> Html.Html Msg
-viewParticipants participants price =
+viewParticipants : List Participant -> Pizza -> Html.Html Msg
+viewParticipants participants pizza =
     Html.ul
         []
         (participants
@@ -586,13 +626,13 @@ viewParticipants participants price =
                     Html.li []
                         [ Html.text name
                         , Html.text " doit : "
-                        , price
+                        , pizza.price
                             |> computePriceForParticipant participants participant
                             |> String.fromFloat
                             |> Html.text
                         , Html.text <|
                             if half then
-                                " (demi portion)"
+                                " (étudiant)"
 
                             else
                                 ""
@@ -601,6 +641,7 @@ viewParticipants participants price =
                             , Html.input
                                 [ Html.Attributes.type_ "checkbox"
                                 , Html.Attributes.checked paid
+                                , Html.Events.onCheck <| PayPizza pizza participant
                                 ]
                                 []
                             ]
@@ -741,6 +782,17 @@ decodeParticipant =
         (Decode.field "paid" Decode.bool)
 
 
+encodePizza : Pizza -> Encode.Value
+encodePizza pizza =
+    Encode.object
+        [ ( "id", Encode.string pizza.id )
+        , ( "last_modified", Encode.int pizza.last_modified )
+        , ( "price", Encode.float pizza.price )
+        , ( "participants", Encode.list encodeParticipant pizza.participants )
+        , ( "date", Encode.string pizza.date )
+        ]
+
+
 encodeData : Float -> List Participant -> String -> Encode.Value
 encodeData price participants date =
     Encode.object
@@ -797,10 +849,29 @@ decodeDeletedPizza =
 
 
 deletePizza : Kinto.Client -> Pizza -> Cmd Msg
-deletePizza client entry =
+deletePizza client pizza =
     client
-        |> Kinto.delete deletedRecordResource entry.id
-        |> Kinto.send (PizzaDeleted entry)
+        |> Kinto.delete deletedRecordResource pizza.id
+        |> Kinto.send (PizzaDeleted pizza)
+
+
+payPizza : Kinto.Client -> Pizza -> Participant -> Bool -> Cmd Msg
+payPizza client pizza participant isPaid =
+    let
+        updatedParticipants =
+            pizza.participants
+                |> List.map
+                    (\p ->
+                        if p == participant then
+                            { p | paid = isPaid }
+
+                        else
+                            p
+                    )
+    in
+    client
+        |> Kinto.update recordResource pizza.id (encodePizza { pizza | participants = updatedParticipants })
+        |> Kinto.send PizzaPaid
 
 
 
