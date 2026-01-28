@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "./favicon.ico"
   },
   {
-    "revision": "072a6431b95c58fb492f5c39ccec7fd0",
+    "revision": "46444ae94d497a8d4a1bcb4059d755e8",
     "url": "./index.html"
   },
   {
@@ -20,8 +20,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "./pico.min.css"
   },
   {
-    "revision": "2714a29fd6faec9cfcd9",
-    "url": "./static/js/main.2714a29f.chunk.js"
+    "revision": "f8b877c5acbac33f7725",
+    "url": "./static/js/main.f8b877c5.chunk.js"
   },
   {
     "revision": "d5752d2fdce3c7e150f5",
